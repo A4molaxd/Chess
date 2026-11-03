@@ -1,15 +1,16 @@
+# Pygame Initialization
 import pygame
-
-# --------------- p = pawn, r = rook, n = knight, b = bishop, q = queen, k = king. lowercase letters = black, uppercase letters = white ---------------
 
 pygame.init()
 
 WIDTH = 800
 HEIGHT = 800
 
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
 pieceOffset = 50
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+# Texture loading
 
 textures = []
 
@@ -33,6 +34,8 @@ textureSetup(textures)
 for i in range(12):
     textures[i] = pygame.transform.scale(textures[i], (100, 100))
 
+# --------------- p = pawn, r = rook, n = knight, b = bishop, q = queen, k = king. lowercase letters = black, uppercase letters = white ---------------
+
 piecesDict = {
     "p" : 0,
     "r" : 1,
@@ -48,13 +51,14 @@ piecesDict = {
     "K" : 11
 }
 
+# Board renderer
 def drawBoard(screen, posFrom, posTo):
     for i in range(8):
         for j in range(8):
             color = (255, 221, 171)
-            if (i + j) % 2 == 1:
+            if (i + j) % 2 == 1: # colors the squares based on their position 
                 color = (168, 105, 62)
-            if posFrom is not None and posTo is not None:
+            if posFrom is not None and posTo is not None: # Checks if a piece just moved from / to that square and colors it consequently
                 if posFrom == [j, i] or posTo == [j, i]:
                     if (i + j) % 2 == 1:
                         color = (170, 162, 58)
@@ -68,14 +72,16 @@ def drawBoard(screen, posFrom, posTo):
                         color = (205, 210, 106)
             pygame.draw.rect(screen, color, (i * WIDTH / 8, j * HEIGHT / 8, WIDTH / 8, HEIGHT / 8))
 
+# Pieces renderer
 def drawPieces(screen, board):
     for i in range(len(board[0])):
         for j in range(len(board)):
-            if board[j][i] == None:
-                continue
+            if board[j][i] == None: # Checks whether there are pieces in the square
+                continue 
             else:
                 screen.blit(textures[piecesDict.get(board[j][i])],  (i * WIDTH / 8, j * HEIGHT / 8))
 
+# Initial board configuration
 def boardInit():
     return [['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
             ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
@@ -86,6 +92,7 @@ def boardInit():
             ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'], 
             ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']]
 
+# Returns the board position given a screen position (this could be optimized with mod operations)
 def getPiece(pos):
     for i in range(8):
         for j in range(8):
@@ -93,15 +100,18 @@ def getPiece(pos):
                 boardPos = [j, i]
                 return boardPos
             
+# Renders the piece if it is being held
 def drawMovingPiece(screen, mousePos, piece):
     screen.blit(textures[piecesDict.get(piece)], (mousePos[0] - pieceOffset, mousePos[1] - pieceOffset))
-    
+
+# Checks whether it is a valid move and moves the selected piece
 def movePiece(board, pieceType, pos, oldPos):
     if (isValidMove(board, pieceType, pos, oldPos)):
         board[pos[0]][pos[1]] = pieceType
         return True
     return False
-    
+
+# Returns true if the move follows chess ruleset    
 def isValidMove(board, pieceType, pos, oldPos):
     if pieceType.lower() == 'r':
         validPos = getValidPositionsForRook(board, oldPos, pieceType)
@@ -141,7 +151,7 @@ def isValidMove(board, pieceType, pos, oldPos):
                     return True
     return False
 
-# returns [[,],[,],[,],[,], ...] with valid positions
+# Each one of the next functions, returns [[,],[,],[,],[,], ...] with the valid positions
 
 def getValidPositionsForRook(board, pos, pieceType):
     validPos = []
@@ -233,7 +243,7 @@ def getValidPositionsForBishop(board, pos, pieceType):
         validPos.remove(pos)
     
     return validPos     
-# -----------  FALTA ENROQUE  --------------- #
+# -----------  MISSING CASTLING  --------------- #
 def getValidPositionsForKing(board, pos, pieceType):
     validPos = []
     for i in range(max(pos[0] - 1, 0), min(pos[0] + 2, 8)):
@@ -306,7 +316,7 @@ def getValidPositionsForQueen(board, pos, pieceType):
             validPos.append([pos[0] - i, pos[1] - i])
     
     return validPos
-# ----------  FALTA EN PASSANT  ------------- #
+# ----------  MISSING EN PASSANT  ------------- #
 def getValidPositionsForPawn(board, pos, pieceType):
     validPos = []
     if pieceType.isupper() == True:
@@ -337,7 +347,6 @@ def getValidPositionsForPawn(board, pos, pieceType):
                     validPos.append([pos[0] + 1, pos[1] + 1])
     return validPos
     
-
 def notMovePiece(board, pieceType, pos):
     board[pos[0]][pos[1]] = pieceType
 
@@ -361,13 +370,13 @@ def main():
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 run = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN: # Logic for choosing the selected squares
                 mousetype = pygame.mouse.get_pressed()
                 if mousetype[0] == True:
                     mousepos = pygame.mouse.get_pos()
                     selectedPiece = getPiece(mousepos)
                     selectedPieceType = board[selectedPiece[0]][selectedPiece[1]]
-                    if selectedPieceType.isupper() == turn:
+                    if selectedPieceType != None and selectedPieceType.isupper() == turn:
                         selectedPiece = None
                         selectedPieceType = None
                         break
@@ -399,13 +408,15 @@ def main():
                                 selectedPiece = None
                                 selectedPieceType = None
 
+        # Render
         drawBoard(screen, currPos, newPos)
         drawPieces(screen, board)
         
         if selectedPiece != None and selectedSquare == None:
             mousePos = pygame.mouse.get_pos()
             drawMovingPiece(screen, mousePos, selectedPieceType)
-        
+
+        # Update display
         pygame.display.flip()
         clock.tick(60)
 
